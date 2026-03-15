@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.railway.mapper.PassengerFlowMapper">
+    
+    <resultMap id="BaseResultMap" type="com.railway.entity.PassengerFlow">
+        <id column="id" property="id"/>
+        <!-- 基础信息 -->
+        <result column="line_id" property="lineId"/>
+        <result column="train_id" property="trainId"/>
+        <result column="station_id" property="stationId"/>
+        <result column="skzld" property="skzld"/>
+        <result column="sxbm" property="sxbm"/>
+        <result column="flow_date" property="flowDate"/>
+        <result column="operate_time" property="operateTime"/>
+        <result column="time_interval" property="timeInterval"/>
+        <!-- 时间相关 -->
+        <result column="start_station_time" property="startStationTime"/>
+        <result column="start_station_depart" property="startStationDepart"/>
+        <result column="arrive_time" property="arriveTime"/>
+        <result column="depart_time" property="departTime"/>
+        <!-- 客流相关 -->
+        <result column="boarding" property="boarding"/>
+        <result column="alighting" property="alighting"/>
+        <result column="remark" property="remark"/>
+        <result column="train_depart_date" property="trainDepartDate"/>
+        <result column="train_depart_time" property="trainDepartTime"/>
+        <result column="sequence_no" property="sequenceNo"/>
+        <!-- 票务相关 -->
+        <result column="ticket_type" property="ticketType"/>
+        <result column="ticket_price" property="ticketPrice"/>
+        <result column="seat_type" property="seatType"/>
+        <result column="train_copo" property="trainCopo"/>
+        <result column="ticket_date" property="ticketDate"/>
+        <!-- 站点相关 -->
+        <result column="origin_station_id" property="originStationId"/>
+        <result column="origin_station_static" property="originStationStatic"/>
+        <result column="origin_station_start" property="originStationStart"/>
+        <result column="dest_station_id" property="destStationId"/>
+        <result column="dest_station_static" property="destStationStatic"/>
+        <result column="dest_station_end" property="destStationEnd"/>
+        <!-- 列车相关 -->
+        <result column="train_class" property="trainClass"/>
+        <result column="train_type" property="trainType"/>
+        <!-- 其他 -->
+        <result column="sale_station_id" property="saleStationId"/>
+        <result column="station_limit" property="stationLimit"/>
+        <result column="static_sps" property="staticSps"/>
+        <result column="to_station_id" property="toStationId"/>
+        <result column="revenue" property="revenue"/>
+        <!-- 扩展字段 -->
+        <result column="kill_field" property="kill"/>
+        <result column="sokl" property="sokl"/>
+        <result column="kofig" property="kofig"/>
+    </resultMap>
+    
+    <sql id="Base_Column_List">
+        id, line_id, train_id, station_id, skzld, sxbm, flow_date, operate_time, time_interval,
+        start_station_time, start_station_depart, arrive_time, depart_time,
+        boarding, alighting, remark, train_depart_date, train_depart_time, sequence_no,
+        ticket_type, ticket_price, seat_type, train_copo, ticket_date,
+        origin_station_id, origin_station_static, origin_station_start,
+        dest_station_id, dest_station_static, dest_station_end,
+        train_class, train_type, sale_station_id, station_limit, static_sps, to_station_id, revenue,
+        kill_field, sokl, kofig
+    </sql>
+    
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO passenger_flow(
+            line_id, train_id, station_id, skzld, sxbm, flow_date, operate_time, time_interval,
+            start_station_time, start_station_depart, arrive_time, depart_time,
+            boarding, alighting, remark, train_depart_date, train_depart_time, sequence_no,
+            ticket_type, ticket_price, seat_type, train_copo, ticket_date,
+            origin_station_id, origin_station_static, origin_station_start,
+            dest_station_id, dest_station_static, dest_station_end,
+            train_class, train_type, sale_station_id, station_limit, static_sps, to_station_id, revenue,
+            kill_field, sokl, kofig
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.lineId}, #{item.trainId}, #{item.stationId}, #{item.skzld}, #{item.sxbm}, 
+             #{item.flowDate}, #{item.operateTime}, #{item.timeInterval},
+             #{item.startStationTime}, #{item.startStationDepart}, #{item.arriveTime}, #{item.departTime},
+             #{item.boarding}, #{item.alighting}, #{item.remark}, #{item.trainDepartDate}, #{item.trainDepartTime}, #{item.sequenceNo},
+             #{item.ticketType}, #{item.ticketPrice}, #{item.seatType}, #{item.trainCopo}, #{item.ticketDate},
+             #{item.originStationId}, #{item.originStationStatic}, #{item.originStationStart},
+             #{item.destStationId}, #{item.destStationStatic}, #{item.destStationEnd},
+             #{item.trainClass}, #{item.trainType}, #{item.saleStationId}, #{item.stationLimit}, #{item.staticSps}, #{item.toStationId}, #{item.revenue},
+             #{item.kill}, #{item.sokl}, #{item.kofig})
+        </foreach>
+    </insert>
+    
+</mapper>

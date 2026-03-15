@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成渝地区铁路客运智能分析与可视化系统</title>
+    <!-- ECharts本地文件 -->
+    <script src="/js/echarts.min.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航 -->
+        <header class="header">
+            <div class="header-left">
+                <span class="logo-icon">🚄</span>
+                <h1>成渝地区铁路客运智能分析与可视化系统</h1>
+            </div>
+            <nav class="nav-tabs">
+                <button class="tab-btn active" data-tab="dashboard">数据总览</button>
+                <button class="tab-btn" data-tab="data-manage">数据管理</button>
+                <button class="tab-btn" data-tab="passenger-analysis">客流分析</button>
+                <button class="tab-btn" data-tab="line-optimize">线路优化</button>
+                <button class="tab-btn" data-tab="station-eval">站点评估</button>
+            </nav>
+            <div class="user-info">
+                <span class="username" id="current-user">admin</span>
+                <button class="logout-btn" onclick="logout()">退出</button>
+            </div>
+        </header>
+
+        <!-- 数据总览 Dashboard -->
+        <section id="dashboard" class="tab-content active">
+            <!-- 筛选控件 -->
+            <div class="dashboard-filters">
+                <div class="filter-item">
+                    <label>选择站点：</label>
+                    <select id="dashboard-station-select" onchange="filterDashboardByStation()">
+                        <option value="">全部站点</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>时间范围：</label>
+                    <input type="range" id="dashboard-time-slider" min="0" max="365" value="0" oninput="updateDashboardTimeSlider(this.value)">
+                    <span id="dashboard-slider-value">全部数据</span>
+                </div>
+            </div>
+            
+            <div class="kpi-cards">
+                <div class="kpi-card">
+                    <div class="kpi-icon">🚄</div>
+                    <div class="kpi-info">
+                        <span class="kpi-value" id="total-trains">--</span>
+                        <span class="kpi-label">列车总数</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon">🚉</div>
+                    <div class="kpi-info">
+                        <span class="kpi-value" id="total-stations">--</span>
+                        <span class="kpi-label">站点总数</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon">👥</div>
+                    <div class="kpi-info">
+                        <span class="kpi-value" id="total-passengers">--</span>
+                        <span class="kpi-label">日均客流量</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon">📈</div>
+                    <div class="kpi-info">
+                        <span class="kpi-value" id="avg-capacity">--</span>
+                        <span class="kpi-label">平均运量</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3>列车类型分布</h3>
+                    <div id="train-type-chart" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <h3>客流时段分布</h3>
+                    <div id="time-distribution-chart" class="chart"></div>
+                </div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container wide">
+                    <h3>热门站点客流排名 TOP10</h3>
+                    <div id="station-ranking-chart" class="chart"></div>
+                </div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container wide">
+                    <h3>成渝地区铁路客流地图（热力图+OD流向）</h3>
+                    <div id="map-chart" class="chart" style="height: 400px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 数据管理模块 -->
+        <section id="data-manage" class="tab-content">
+            <div class="module-header">
+                <h2>数据管理</h2>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="showAddModal()">新增</button>
+                    <button class="btn btn-secondary" onclick="showImportModal()">导入数据</button>
+                    <button class="btn btn-secondary" onclick="exportData()">导出数据</button>
+                </div>
+            </div>
+            
+            <div class="data-tabs">
+                <button class="data-tab-btn active" data-table="trains">列车表</button>
+                <button class="data-tab-btn" data-table="stations">站点表</button>
+                <button class="data-tab-btn" data-table="lines">线路站点表</button>
+                <button class="data-tab-btn" data-table="flow">客运量表</button>
+            </div>
+            
+            <div class="search-filter">
+                <input type="text" id="search-input" placeholder="搜索..." onkeyup="filterTable()">
+                <select id="filter-select" onchange="filterTable()">
+                    <option value="">全部</option>
+                </select>
+            </div>
+            
+            <div class="table-container">
+                <table id="data-table">
+                    <thead id="table-header"></thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+            
+            <div class="pagination">
+                <button onclick="prevPage()">上一页</button>
+                <span id="page-info">第 1 页</span>
+                <button onclick="nextPage()">下一页</button>
+            </div>
+        </section>
+
+        <!-- 客流分析模块 -->
+        <section id="passenger-analysis" class="tab-content">
+            <div class="module-header">
+                <h2>客流分析</h2>
+                <div class="filter-controls">
+                    <label>时间范围：</label>
+                    <select id="time-range" onchange="updateTimeRange()">
+                        <option value="day">按日</option>
+                        <option value="week">按周</option>
+                        <option value="month">按月</option>
+                    </select>
+                    <label style="margin-left:15px;">日期筛选：</label>
+                    <input type="date" id="date-start" onchange="filterByDate()">
+                    <span>至</span>
+                    <input type="date" id="date-end" onchange="filterByDate()">
+                </div>
+            </div>
+            
+            <div class="analysis-cards">
+                <div class="analysis-card">
+                    <h4>今日客流</h4>
+                    <span class="big-number" id="today-flow">125,680</span>
+                    <span class="trend up" id="today-trend">↑ 5.2%</span>
+                </div>
+                <div class="analysis-card">
+                    <h4>本周客流</h4>
+                    <span class="big-number" id="week-flow">879,760</span>
+                    <span class="trend up" id="week-trend">↑ 3.8%</span>
+                </div>
+                <div class="analysis-card">
+                    <h4>本月客流</h4>
+                    <span class="big-number" id="month-flow">3,519,040</span>
+                    <span class="trend down" id="month-trend">↓ 1.2%</span>
+                </div>
+            </div>
+            
+            <!-- 时间滑块 -->
+            <div class="time-slider-container">
+                <label>时间滑块（快速选择时间范围）：</label>
+                <input type="range" id="time-slider" min="0" max="365" value="0" oninput="updateTimeSlider(this.value)">
+                <span id="time-slider-value">全部数据</span>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3>客流趋势分析</h3>
+                    <div id="flow-trend-chart" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <h3>高峰时段分析（早高峰7:00-9:00）</h3>
+                    <div id="peak-hours-chart" class="chart"></div>
+                </div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3>OD客流分布（起讫点分析-成都重庆）</h3>
+                    <div id="od-flow-chart" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <h3>座位类型占比（商务座/一等座/二等座）</h3>
+                    <div id="seat-type-chart" class="chart"></div>
+                </div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3>周客流分布（周五周日高峰）</h3>
+                    <div id="weekly-flow-chart" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <h3>OD客流流向图</h3>
+                    <div id="od-sankey-chart" class="chart"></div>
+                </div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container wide">
+                    <h3>客流预测（ARIMA时间序列模型）</h3>
+                    <div class="predict-controls">
+                        <button class="btn btn-primary" onclick="loadFlowPrediction()">生成预测</button>
+                        <span style="margin-left:10px;color:#666;">基于历史数据预测未来7天客流趋势</span>
+                    </div>
+                    <div id="flow-predict-chart" class="chart"></div>
+                </div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3>节假日客流特征分析</h3>
+                    <div id="holiday-flow-chart" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <h3>工作日vs周末客流对比</h3>
+                    <div id="weekday-weekend-chart" class="chart"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 线路优化模块 -->
+        <section id="line-optimize" class="tab-content">
+            <div class="module-header">
+                <h2>线路优化分析</h2>
+                <div class="filter-controls">
+                    <label>选择线路：</label>
+                    <select id="line-select" onchange="filterByLine()">
+                        <option value="">全部线路</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3>线路负载分析</h3>
+                    <div id="line-load-chart" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <h3>各线路上座率</h3>
+                    <div id="occupancy-chart" class="chart"></div>
+                </div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3>时刻表优化分析（客流与发车时刻关系）</h3>
+                    <div id="schedule-optimize-chart" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <h3>枢纽站点识别（度中心性/介数中心性）</h3>
+                    <div id="hub-identify-chart" class="chart"></div>
+                </div>
+            </div>
+            
+            <div class="optimization-suggestions">
+                <h3>优化建议</h3>
+                <div class="suggestion-list" id="suggestions-list">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container wide">
+                    <h3>断面客流密度分析</h3>
+                    <div id="section-flow-chart" class="chart"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 站点评估模块 -->
+        <section id="station-eval" class="tab-content">
+            <div class="module-header">
+                <h2>站点评估</h2>
+                <div class="filter-controls">
+                    <label>选择站点：</label>
+                    <select id="station-eval-select" onchange="filterStationEval()">
+                        <option value="">全部站点</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3>站点繁忙度排名</h3>
+                    <div id="station-busy-chart" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <h3>站点功能分类（始发终到站/中转站/通过站）</h3>
+                    <div id="station-type-chart" class="chart"></div>
+                </div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3>站点客流时段分布</h3>
+                    <div id="station-time-chart" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <h3>中转站换乘效率与流向分析</h3>
+                    <div id="transfer-flow-chart" class="chart"></div>
+                </div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container wide">
+                    <h3>枢纽站点中心性分析</h3>
+                    <div id="hub-analysis-chart" class="chart"></div>
+                </div>
+            </div>
+            
+            <div class="station-detail">
+                <h3>站点详情</h3>
+                <select id="station-select" onchange="showStationDetail()">
+                    <option value="">选择站点...</option>
+                </select>
+                <div id="station-detail-content"></div>
+            </div>
+            
+            <div class="charts-row">
+                <div class="chart-container wide">
+                    <h3>站点服务能力评估</h3>
+                    <div id="service-capacity-chart" class="chart"></div>
+                </div>
+            </div>
+            
+            <div class="service-capacity-table">
+                <h3>服务能力详情</h3>
+                <div id="service-capacity-list"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 导入数据弹窗 -->
+    <div id="import-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeImportModal()">&times;</span>
+            <h2>导入数据</h2>
+            <div class="import-form">
+                <label>选择数据类型：</label>
+                <select id="import-type">
+                    <option value="trains">列车数据</option>
+                    <option value="stations">站点数据</option>
+                    <option value="lines">线路数据</option>
+                    <option value="passengers">客运量数据</option>
+                </select>
+                <label>选择文件：</label>
+                <input type="file" id="import-file" accept=".csv,.xlsx">
+                <div class="import-options">
+                    <label><input type="checkbox" id="clean-data" checked> 自动清洗数据</label>
+                    <label><input type="checkbox" id="validate-data" checked> 数据验证</label>
+                    <label><input type="checkbox" id="clear-before"> 清空旧数据后导入</label>
+                </div>
+                <button class="btn btn-primary" onclick="importData()">开始导入</button>
+            </div>
+            <div id="import-result"></div>
+        </div>
+    </div>
+
+    <!-- 新增/编辑弹窗 -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <h2 id="edit-modal-title">新增数据</h2>
+            <form id="edit-form" class="edit-form">
+                <div id="edit-form-fields"></div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 删除确认弹窗 -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDeleteModal()">&times;</span>
+            <h2>确认删除</h2>
+            <p>确定要删除这条记录吗？此操作不可恢复。</p>
+            <div class="form-actions">
+                <button class="btn btn-danger" onclick="confirmDelete()">确认删除</button>
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/charts.js"></script>
+</body>
+</html>
